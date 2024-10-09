@@ -32,10 +32,11 @@ function hideSpinner() {
 function closeResultContainer() {
   resultContainer.style.visibility = "hidden";
   searchInput.value = null;
+  searchInputId.value = null;
 }
 
 async function getFilms(filmsUrls) {
-  if (filmsUrls.length > 0) {
+  if (filmsUrls) {
     const filmsTitles = [];
     for (const url of filmsUrls) {
       const filmId = url.match(/\/([0-9]*)\/$/)[1];
@@ -49,7 +50,7 @@ async function getFilms(filmsUrls) {
 }
 
 async function getCharacters(charactersUrls) {
-  if (charactersUrls.length > 0) {
+  if (charactersUrls) {
     const charactersNames = [];
     for (const url of charactersUrls) {
       const characterId = url.match(/\/([0-9]*)\/$/)[1];
@@ -63,7 +64,7 @@ async function getCharacters(charactersUrls) {
 }
 
 async function getPlanet(planetUrl) {
-  if (planetUrl.length > 0) {
+  if (planetUrl) {
     const planetId = planetUrl.match(/\/([0-9]*)\/$/)[1];
     const planetData = await starWars.getPlanetsById(planetId);
     return planetData.name;
@@ -73,7 +74,7 @@ async function getPlanet(planetUrl) {
 }
 
 async function getSpecies(speciesUrl) {
-  if (speciesUrl.length > 0) {
+  if (speciesUrl) {
     const speciesId = speciesUrl[0].match(/\/([0-9]*)\/$/)[1];
     const speciesData = await starWars.getSpeciesById(speciesId);
     return speciesData.name;
@@ -94,17 +95,19 @@ async function searchCharacter(query) {
     if (data.results && data.results.length > 0) {
       const character = data.results[0];
 
-      // Получаем название планеты
       const planetName = await getPlanet(character.homeworld);
       character.homeworld = planetName;
 
-      // Получаем вид персонажа
-      const speciesName = await getSpecies(character.species);
+      const speciesName =
+        Array.isArray(character.species) && character.species.length > 0
+          ? await getSpecies(character.species)
+          : "Unknown";
       character.species = speciesName;
 
-      // Получаем названия фильмов
-      const filmsTitles = await getFilms(character.films);
-      character.films = filmsTitles;
+      const filmsTitles =
+        Array.isArray(character.films) && character.films.length > 0
+          ? await getFilms(character.films)
+          : "Unknown";
 
       // Создаем HTML-разметку для отображения персонажа
       const characterInfoHTML = `
@@ -120,13 +123,16 @@ async function searchCharacter(query) {
         <p>Species: ${character.species}</p>
         <p>Films:</p>
         <ul>
-          ${filmsTitles.map((film) => `<li>${film}</li>`).join("")}
+          ${
+            Array.isArray(filmsTitles)
+              ? filmsTitles.map((film) => `<li>${film}</li>`).join("")
+              : "Unknown"
+          }
         </ul>
         <p>Created: ${new Date(character.created).toLocaleString()}</p>
         <p>Edited: ${new Date(character.edited).toLocaleString()}</p>
       `;
 
-      // Выводим форматированный результат
       resultContainer.style.visibility = "visible";
       messageHeader.innerHTML = `${character.name}`;
       contentBlock.innerHTML = characterInfoHTML;
@@ -154,10 +160,16 @@ async function searchPlanet(query) {
     if (data.results && data.results.length > 0) {
       const planet = data.results[0];
 
-      const charactersNames = await getCharacters(planet.residents);
+      const charactersNames =
+        Array.isArray(planet.residents) && planet.residents.length > 0
+          ? await getCharacters(planet.residents)
+          : "Unknown";
       planet.residents = charactersNames;
 
-      const filmsTitles = await getFilms(planet.films);
+      const filmsTitles =
+        Array.isArray(planet.films) && planet.films.length > 0
+          ? await getFilms(planet.films)
+          : "Unknown";
       planet.films = filmsTitles;
 
       const planetInfoHTML = `
@@ -171,14 +183,22 @@ async function searchPlanet(query) {
         <p>Surface water: ${planet.surface_water}</p>
         <p>Population: ${planet.population}</p>
         <p>Residents:</p>
-        <ul> 
-          ${charactersNames
-            .map((character) => `<li>${character}</li>`)
-            .join("")}
-        </ul> 
+         <ul>
+          ${
+            Array.isArray(charactersNames)
+              ? charactersNames
+                  .map((character) => `<li>${character}</li>`)
+                  .join("")
+              : "Unknown"
+          }
+        </ul>
         <p>Films:</p>
         <ul>
-          ${filmsTitles.map((film) => `<li>${film}</li>`).join("")}
+          ${
+            Array.isArray(filmsTitles)
+              ? filmsTitles.map((film) => `<li>${film}</li>`).join("")
+              : "Unknown"
+          }
         </ul>
         <p>Created: ${new Date(planet.created).toLocaleString()}</p>
         <p>Edited: ${new Date(planet.edited).toLocaleString()}</p>
@@ -211,10 +231,16 @@ async function searchRaces(query) {
     if (data.results && data.results.length > 0) {
       const species = data.results[0];
 
-      const filmsTitles = await getFilms(species.films);
+      const filmsTitles =
+        Array.isArray(species.films) && species.films.length > 0
+          ? await getFilms(species.films)
+          : "Unknown";
       species.films = filmsTitles;
 
-      const charactersNames = await getCharacters(species.people);
+      const charactersNames =
+        Array.isArray(species.people) && species.people.length > 0
+          ? await getCharacters(species.people)
+          : "Unknown";
       species.people = charactersNames;
 
       const planetName = await getPlanet(species.homeworld);
@@ -233,13 +259,21 @@ async function searchRaces(query) {
       <p>language: ${species.language}</p>
       <p>people: </p>
         <ul>
-          ${charactersNames
-            .map((character) => `<li>${character}</li>`)
-            .join("")}
+          ${
+            Array.isArray(charactersNames)
+              ? charactersNames
+                  .map((character) => `<li>${character}</li>`)
+                  .join("")
+              : "Unknown"
+          }
         </ul>
       <p>films: </p>
         <ul>
-          ${filmsTitles.map((film) => `<li>${film}</li>`).join("")}
+          ${
+            Array.isArray(filmsTitles)
+              ? filmsTitles.map((film) => `<li>${film}</li>`).join("")
+              : "Unknown"
+          }
         </ul>
       <p>created: ${new Date(species.created).toLocaleString()}</p>
       <p>edited: ${new Date(species.edited).toLocaleString()}</p>
@@ -278,19 +312,20 @@ async function searchCharacterById(id) {
       return;
     }
 
-    // Получаем название планеты
     const planetName = await getPlanet(character.homeworld);
     character.homeworld = planetName;
 
-    // Получаем вид персонажа
-    const speciesName = await getSpecies(character.species);
+    const speciesName =
+      Array.isArray(character.species) && character.species.length > 0
+        ? await getSpecies(character.species)
+        : "Unknown";
     character.species = speciesName;
 
-    // Получаем названия фильмов
-    const filmsTitles = await getFilms(character.films);
-    character.films = filmsTitles;
+    const filmsTitles =
+      Array.isArray(character.films) && character.films.length > 0
+        ? await getFilms(character.films)
+        : "Unknown";
 
-    // Создаем HTML-разметку для отображения персонажа
     const characterInfoHTML = `
         <p>Name: ${character.name}</p>
         <p>Height: ${character.height}</p>
@@ -304,13 +339,16 @@ async function searchCharacterById(id) {
         <p>Species: ${character.species}</p>
         <p>Films:</p>
         <ul>
-          ${filmsTitles.map((film) => `<li>${film}</li>`).join("")}
+          ${
+            Array.isArray(filmsTitles)
+              ? filmsTitles.map((film) => `<li>${film}</li>`).join("")
+              : "Unknown"
+          }
         </ul>
         <p>Created: ${new Date(character.created).toLocaleString()}</p>
         <p>Edited: ${new Date(character.edited).toLocaleString()}</p>
       `;
 
-    // Выводим форматированный результат
     resultContainer.style.visibility = "visible";
     messageHeader.innerHTML = `${character.name}`;
     contentBlock.innerHTML = characterInfoHTML;
@@ -338,10 +376,16 @@ async function searchPlanetById(id) {
       return;
     }
 
-    const charactersNames = await getCharacters(planet.residents);
+    const charactersNames =
+      Array.isArray(planet.residents) && planet.residents.length > 0
+        ? await getCharacters(planet.residents)
+        : "Unknown";
     planet.residents = charactersNames;
 
-    const filmsTitles = await getFilms(planet.films);
+    const filmsTitles =
+      Array.isArray(planet.films) && planet.films.length > 0
+        ? await getFilms(planet.films)
+        : "Unknown";
     planet.films = filmsTitles;
 
     const planetInfoHTML = `
@@ -355,14 +399,22 @@ async function searchPlanetById(id) {
         <p>Surface water: ${planet.surface_water}</p>
         <p>Population: ${planet.population}</p>
         <p>Residents:</p>
-        <ul> 
-          ${charactersNames
-            .map((character) => `<li>${character}</li>`)
-            .join("")}
-        </ul> 
+        <ul>
+          ${
+            Array.isArray(charactersNames)
+              ? charactersNames
+                  .map((character) => `<li>${character}</li>`)
+                  .join("")
+              : "Unknown"
+          }
+        </ul>
         <p>Films:</p>
         <ul>
-          ${filmsTitles.map((film) => `<li>${film}</li>`).join("")}
+          ${
+            Array.isArray(filmsTitles)
+              ? filmsTitles.map((film) => `<li>${film}</li>`).join("")
+              : "Unknown"
+          }
         </ul>
         <p>Created: ${new Date(planet.created).toLocaleString()}</p>
         <p>Edited: ${new Date(planet.edited).toLocaleString()}</p>
@@ -379,14 +431,14 @@ async function searchPlanetById(id) {
   }
 }
 
-async function searchRacesById(query) {
+async function searchRacesById(id) {
   try {
     showSpinner();
     resultContainer.style.visibility = "hidden";
     messageHeader.innerHTML = "";
     contentBlock.innerHTML = "";
 
-    const species = await starWars.getSpeciesById(query);
+    const species = await starWars.getSpeciesById(id);
 
     if (!species || species.detail === "Not found") {
       // Проверка на случай, если API возвращает объект с деталью "Not found"
@@ -395,10 +447,16 @@ async function searchRacesById(query) {
       return;
     }
 
-    const filmsTitles = await getFilms(species.films);
+    const filmsTitles =
+      Array.isArray(species.films) && species.films.length > 0
+        ? await getFilms(species.films)
+        : "Unknown";
     species.films = filmsTitles;
 
-    const charactersNames = await getCharacters(species.people);
+    const charactersNames =
+      Array.isArray(species.people) && species.people.length > 0
+        ? await getCharacters(species.people)
+        : "Unknown";
     species.people = charactersNames;
 
     const planetName = await getPlanet(species.homeworld);
@@ -417,13 +475,21 @@ async function searchRacesById(query) {
       <p>language: ${species.language}</p>
       <p>people: </p>
         <ul>
-          ${charactersNames
-            .map((character) => `<li>${character}</li>`)
-            .join("")}
+          ${
+            Array.isArray(charactersNames)
+              ? charactersNames
+                  .map((character) => `<li>${character}</li>`)
+                  .join("")
+              : "Unknown"
+          }
         </ul>
       <p>films: </p>
         <ul>
-          ${filmsTitles.map((film) => `<li>${film}</li>`).join("")}
+          ${
+            Array.isArray(filmsTitles)
+              ? filmsTitles.map((film) => `<li>${film}</li>`).join("")
+              : "Unknown"
+          }
         </ul>
       <p>created: ${new Date(species.created).toLocaleString()}</p>
       <p>edited: ${new Date(species.edited).toLocaleString()}</p>
