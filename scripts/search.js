@@ -11,13 +11,18 @@
 
 const searchInput = document.querySelector(".input");
 const searchInputId = document.querySelector(".inputId");
+
 const searchButton = document.querySelector("#byQueryBtn");
 const searchButtonById = document.querySelector("#byQueryId");
+
 const deleteButton = document.querySelector(".delete");
+
 const resultContainer = document.querySelector("#result-container");
 const messageHeader = document.querySelector(".message-header > p");
 const contentBlock = document.querySelector("#content");
+
 const spinner = document.querySelector(".spinner");
+
 const searchType = document.querySelector("#searchType");
 const searchTypeId = document.querySelector("#searchTypeId");
 
@@ -35,8 +40,17 @@ function closeResultContainer() {
   searchInputId.value = null;
 }
 
+function handleError(error) {
+  messageHeader.innerHTML = `Error: ${error.name}`;
+  contentBlock.innerHTML = `<p>${error.message}</p>`;
+}
+
+function validateArray(array) {
+  return Array.isArray(array) && array.length > 0;
+}
+
 async function getFilms(filmsUrls) {
-  if (filmsUrls) {
+  if (validateArray(filmsUrls)) {
     const filmsTitles = [];
     for (const url of filmsUrls) {
       const filmId = url.match(/\/([0-9]*)\/$/)[1];
@@ -44,13 +58,11 @@ async function getFilms(filmsUrls) {
       filmsTitles.push(filmsData.title);
     }
     return filmsTitles;
-  } else {
-    return "Unknown";
   }
 }
 
 async function getCharacters(charactersUrls) {
-  if (charactersUrls) {
+  if (validateArray(charactersUrls)) {
     const charactersNames = [];
     for (const url of charactersUrls) {
       const characterId = url.match(/\/([0-9]*)\/$/)[1];
@@ -58,8 +70,6 @@ async function getCharacters(charactersUrls) {
       charactersNames.push(characterData.name);
     }
     return charactersNames;
-  } else {
-    return "Unknown";
   }
 }
 
@@ -74,13 +84,108 @@ async function getPlanet(planetUrl) {
 }
 
 async function getSpecies(speciesUrl) {
-  if (speciesUrl) {
+  if (validateArray(speciesUrl)) {
     const speciesId = speciesUrl[0].match(/\/([0-9]*)\/$/)[1];
     const speciesData = await starWars.getSpeciesById(speciesId);
     return speciesData.name;
   } else {
     return "Unknown";
   }
+}
+
+function createInfoHTML(data, type) {
+  let html = "";
+
+  if (type === "character") {
+    html = `
+        <p>Name: ${data.name}</p>
+        <p>Height: ${data.height}</p>
+        <p>Mass: ${data.mass}</p>
+        <p>Hair Color: ${data.hair_color}</p>
+        <p>Skin Color: ${data.skin_color}</p>
+        <p>Eye Color: ${data.eye_color}</p>
+        <p>Birth Year: ${data.birth_year}</p>
+        <p>Gender: ${data.gender}</p>
+        <p>Homeworld: ${data.homeworld}</p>
+        <p>Species: ${data.species}</p>
+        <p>Films:</p>
+        <ul>
+          ${
+            Array.isArray(data.films)
+              ? data.films.map((film) => `<li>${film}</li>`).join("")
+              : "Unknown"
+          }
+        </ul>
+        <p>Created: ${new Date(data.created).toLocaleString()}</p>
+        <p>Edited: ${new Date(data.edited).toLocaleString()}</p>
+      `;
+  }
+  if (type === "planet") {
+    html = `
+        <p>Name: ${data.name}</p>
+        <p>Rotation period: ${data.rotation_period}</p>
+        <p>Orbital period: ${data.orbital_period}</p>
+        <p>Diameter: ${data.diameter}</p>
+        <p>Climate: ${data.climate}</p>
+        <p>Gravity: ${data.gravity}</p>
+        <p>Terrain: ${data.terrain}</p>
+        <p>Surface water: ${data.surface_water}</p>
+        <p>Population: ${data.population}</p>
+        <p>Residents:</p>
+         <ul>
+          ${
+            Array.isArray(data.residents)
+              ? data.residents.map((people) => `<li>${people}</li>`).join("")
+              : "Unknown"
+          }
+        </ul>
+        <p>Films:</p>
+        <ul>
+          ${
+            Array.isArray(data.films)
+              ? data.films.map((film) => `<li>${film}</li>`).join("")
+              : "Unknown"
+          }
+        </ul>
+        <p>Created: ${new Date(data.created).toLocaleString()}</p>
+        <p>Edited: ${new Date(data.edited).toLocaleString()}</p>
+        `;
+  }
+
+  if (type === "species") {
+    html = `
+      <p>Name: ${data.name}</p>
+      <p>classification: ${data.classification} </p>
+      <p>designation: ${data.designation}</p>
+      <p>average_height: ${data.average_height}</p>
+      <p>skin_colors: ${data.skin_colors}</p>
+      <p>hair_colors: ${data.hair_colors}</p>
+      <p>eye_colors: ${data.eye_colors}</p>
+      <p>average_lifespan: ${data.average_lifespan}</p>
+      <p>homeworld: ${data.homeworld}</p>
+      <p>language: ${data.language}</p>
+      <p>people: </p>
+        <ul>
+          ${
+            Array.isArray(data.people)
+              ? data.people.map((people) => `<li>${people}</li>`).join("")
+              : "Unknown"
+          }
+        </ul>
+      <p>films: </p>
+        <ul>
+          ${
+            Array.isArray(data.films)
+              ? data.films.map((film) => `<li>${film}</li>`).join("")
+              : "Unknown"
+          }
+        </ul>
+      <p>created: ${new Date(data.created).toLocaleString()}</p>
+      <p>edited: ${new Date(data.edited).toLocaleString()}</p>
+      `;
+  }
+
+  return html;
 }
 
 async function searchCharacter(query) {
@@ -92,57 +197,24 @@ async function searchCharacter(query) {
 
     const data = await starWars.searchCharacters(query);
 
-    if (data.results && data.results.length > 0) {
+    if (validateArray(data.results)) {
       const character = data.results[0];
 
-      const planetName = await getPlanet(character.homeworld);
-      character.homeworld = planetName;
+      character.homeworld = await getPlanet(character.homeworld);
 
-      const speciesName =
-        Array.isArray(character.species) && character.species.length > 0
-          ? await getSpecies(character.species)
-          : "Unknown";
-      character.species = speciesName;
+      character.species = await getSpecies(character.species);
 
-      const filmsTitles =
-        Array.isArray(character.films) && character.films.length > 0
-          ? await getFilms(character.films)
-          : "Unknown";
-
-      // Создаем HTML-разметку для отображения персонажа
-      const characterInfoHTML = `
-        <p>Name: ${character.name}</p>
-        <p>Height: ${character.height}</p>
-        <p>Mass: ${character.mass}</p>
-        <p>Hair Color: ${character.hair_color}</p>
-        <p>Skin Color: ${character.skin_color}</p>
-        <p>Eye Color: ${character.eye_color}</p>
-        <p>Birth Year: ${character.birth_year}</p>
-        <p>Gender: ${character.gender}</p>
-        <p>Homeworld: ${character.homeworld}</p>
-        <p>Species: ${character.species}</p>
-        <p>Films:</p>
-        <ul>
-          ${
-            Array.isArray(filmsTitles)
-              ? filmsTitles.map((film) => `<li>${film}</li>`).join("")
-              : "Unknown"
-          }
-        </ul>
-        <p>Created: ${new Date(character.created).toLocaleString()}</p>
-        <p>Edited: ${new Date(character.edited).toLocaleString()}</p>
-      `;
+      character.films = await getFilms(character.films);
 
       resultContainer.style.visibility = "visible";
       messageHeader.innerHTML = `${character.name}`;
-      contentBlock.innerHTML = characterInfoHTML;
+      contentBlock.innerHTML = createInfoHTML(character, "character");
     } else {
       resultContainer.style.visibility = "visible";
       contentBlock.innerHTML = `<p>Character not found</p>`;
     }
   } catch (error) {
-    messageHeader.innerHTML = `Error: ${error.name}`;
-    contentBlock.innerHTML = `<p>${error.message}</p>`;
+    handleError(error);
   } finally {
     hideSpinner();
   }
@@ -157,63 +229,22 @@ async function searchPlanet(query) {
 
     const data = await starWars.searchPlanets(query);
 
-    if (data.results && data.results.length > 0) {
+    if (validateArray(data.results)) {
       const planet = data.results[0];
 
-      const charactersNames =
-        Array.isArray(planet.residents) && planet.residents.length > 0
-          ? await getCharacters(planet.residents)
-          : "Unknown";
-      planet.residents = charactersNames;
+      planet.residents = await getCharacters(planet.residents);
 
-      const filmsTitles =
-        Array.isArray(planet.films) && planet.films.length > 0
-          ? await getFilms(planet.films)
-          : "Unknown";
-      planet.films = filmsTitles;
-
-      const planetInfoHTML = `
-        <p>Name: ${planet.name}</p>
-        <p>Rotation period: ${planet.rotation_period}</p>
-        <p>Orbital period: ${planet.orbital_period}</p>
-        <p>Diameter: ${planet.diameter}</p>
-        <p>Climate: ${planet.climate}</p>
-        <p>Gravity: ${planet.gravity}</p>
-        <p>Terrain: ${planet.terrain}</p>
-        <p>Surface water: ${planet.surface_water}</p>
-        <p>Population: ${planet.population}</p>
-        <p>Residents:</p>
-         <ul>
-          ${
-            Array.isArray(charactersNames)
-              ? charactersNames
-                  .map((character) => `<li>${character}</li>`)
-                  .join("")
-              : "Unknown"
-          }
-        </ul>
-        <p>Films:</p>
-        <ul>
-          ${
-            Array.isArray(filmsTitles)
-              ? filmsTitles.map((film) => `<li>${film}</li>`).join("")
-              : "Unknown"
-          }
-        </ul>
-        <p>Created: ${new Date(planet.created).toLocaleString()}</p>
-        <p>Edited: ${new Date(planet.edited).toLocaleString()}</p>
-        `;
+      planet.films = await getFilms(planet.films);
 
       resultContainer.style.visibility = "visible";
       messageHeader.innerHTML = `${planet.name}`;
-      contentBlock.innerHTML = planetInfoHTML;
+      contentBlock.innerHTML = createInfoHTML(planet, "planet");
     } else {
       resultContainer.style.visibility = "visible";
       contentBlock.innerHTML = `<p>Planet not found</p>`;
     }
   } catch (error) {
-    messageHeader.innerHTML = `Error: ${error.name}`;
-    contentBlock.innerHTML = `<p>${error.message}</p>`;
+    handleError(error);
   } finally {
     hideSpinner();
   }
@@ -228,69 +259,24 @@ async function searchRaces(query) {
 
     const data = await starWars.searchSpecies(query);
 
-    if (data.results && data.results.length > 0) {
+    if (validateArray(data.results)) {
       const species = data.results[0];
 
-      const filmsTitles =
-        Array.isArray(species.films) && species.films.length > 0
-          ? await getFilms(species.films)
-          : "Unknown";
-      species.films = filmsTitles;
+      species.films = await getFilms(species.films);
 
-      const charactersNames =
-        Array.isArray(species.people) && species.people.length > 0
-          ? await getCharacters(species.people)
-          : "Unknown";
-      species.people = charactersNames;
+      species.people = await getCharacters(species.people);
 
-      const planetName = await getPlanet(species.homeworld);
-      species.homeworld = planetName;
-
-      const speciesInfoHTML = `
-      <p>Name: ${species.name}</p>
-      <p>classification: ${species.classification} </p>
-      <p>designation: ${species.designation}</p>
-      <p>average_height: ${species.average_height}</p>
-      <p>skin_colors: ${species.skin_colors}</p>
-      <p>hair_colors: ${species.hair_colors}</p>
-      <p>eye_colors: ${species.eye_colors}</p>
-      <p>average_lifespan: ${species.average_lifespan}</p>
-      <p>homeworld: ${species.homeworld}</p>
-      <p>language: ${species.language}</p>
-      <p>people: </p>
-        <ul>
-          ${
-            Array.isArray(charactersNames)
-              ? charactersNames
-                  .map((character) => `<li>${character}</li>`)
-                  .join("")
-              : "Unknown"
-          }
-        </ul>
-      <p>films: </p>
-        <ul>
-          ${
-            Array.isArray(filmsTitles)
-              ? filmsTitles.map((film) => `<li>${film}</li>`).join("")
-              : "Unknown"
-          }
-        </ul>
-      <p>created: ${new Date(species.created).toLocaleString()}</p>
-      <p>edited: ${new Date(species.edited).toLocaleString()}</p>
-      `;
+      species.homeworld = await getPlanet(species.homeworld);
 
       resultContainer.style.visibility = "visible";
       messageHeader.innerHTML = `${species.name}`;
-      contentBlock.innerHTML = speciesInfoHTML;
+      contentBlock.innerHTML = createInfoHTML(species, "species");
     } else {
       resultContainer.style.visibility = "visible";
       contentBlock.innerHTML = `<p>Species not found</p>`;
     }
   } catch (error) {
-    resultContainer.style.visibility = "visible";
-    messageHeader.innerHTML = `Error: ${error.name}`;
-    contentBlock.innerHTML = `${error.message}`;
-    console.log(error);
+    handleError(error);
   } finally {
     hideSpinner();
   }
@@ -312,49 +298,17 @@ async function searchCharacterById(id) {
       return;
     }
 
-    const planetName = await getPlanet(character.homeworld);
-    character.homeworld = planetName;
+    character.homeworld = await getPlanet(character.homeworld);
 
-    const speciesName =
-      Array.isArray(character.species) && character.species.length > 0
-        ? await getSpecies(character.species)
-        : "Unknown";
-    character.species = speciesName;
+    character.species = await getSpecies(character.species);
 
-    const filmsTitles =
-      Array.isArray(character.films) && character.films.length > 0
-        ? await getFilms(character.films)
-        : "Unknown";
-
-    const characterInfoHTML = `
-        <p>Name: ${character.name}</p>
-        <p>Height: ${character.height}</p>
-        <p>Mass: ${character.mass}</p>
-        <p>Hair Color: ${character.hair_color}</p>
-        <p>Skin Color: ${character.skin_color}</p>
-        <p>Eye Color: ${character.eye_color}</p>
-        <p>Birth Year: ${character.birth_year}</p>
-        <p>Gender: ${character.gender}</p>
-        <p>Homeworld: ${character.homeworld}</p>
-        <p>Species: ${character.species}</p>
-        <p>Films:</p>
-        <ul>
-          ${
-            Array.isArray(filmsTitles)
-              ? filmsTitles.map((film) => `<li>${film}</li>`).join("")
-              : "Unknown"
-          }
-        </ul>
-        <p>Created: ${new Date(character.created).toLocaleString()}</p>
-        <p>Edited: ${new Date(character.edited).toLocaleString()}</p>
-      `;
+    character.films = await getFilms(character.films);
 
     resultContainer.style.visibility = "visible";
     messageHeader.innerHTML = `${character.name}`;
-    contentBlock.innerHTML = characterInfoHTML;
+    contentBlock.innerHTML = createInfoHTML(character, "character");
   } catch (error) {
-    messageHeader.innerHTML = `Error: ${error.name}`;
-    contentBlock.innerHTML = `<p>${error.message}</p>`;
+    handleError(error);
   } finally {
     hideSpinner();
   }
@@ -376,56 +330,15 @@ async function searchPlanetById(id) {
       return;
     }
 
-    const charactersNames =
-      Array.isArray(planet.residents) && planet.residents.length > 0
-        ? await getCharacters(planet.residents)
-        : "Unknown";
-    planet.residents = charactersNames;
+    planet.residents = await getCharacters(planet.residents);
 
-    const filmsTitles =
-      Array.isArray(planet.films) && planet.films.length > 0
-        ? await getFilms(planet.films)
-        : "Unknown";
-    planet.films = filmsTitles;
-
-    const planetInfoHTML = `
-        <p>Name: ${planet.name}</p>
-        <p>Rotation period: ${planet.rotation_period}</p>
-        <p>Orbital period: ${planet.orbital_period}</p>
-        <p>Diameter: ${planet.diameter}</p>
-        <p>Climate: ${planet.climate}</p>
-        <p>Gravity: ${planet.gravity}</p>
-        <p>Terrain: ${planet.terrain}</p>
-        <p>Surface water: ${planet.surface_water}</p>
-        <p>Population: ${planet.population}</p>
-        <p>Residents:</p>
-        <ul>
-          ${
-            Array.isArray(charactersNames)
-              ? charactersNames
-                  .map((character) => `<li>${character}</li>`)
-                  .join("")
-              : "Unknown"
-          }
-        </ul>
-        <p>Films:</p>
-        <ul>
-          ${
-            Array.isArray(filmsTitles)
-              ? filmsTitles.map((film) => `<li>${film}</li>`).join("")
-              : "Unknown"
-          }
-        </ul>
-        <p>Created: ${new Date(planet.created).toLocaleString()}</p>
-        <p>Edited: ${new Date(planet.edited).toLocaleString()}</p>
-        `;
+    planet.films = await getFilms(planet.films);
 
     resultContainer.style.visibility = "visible";
     messageHeader.innerHTML = `${planet.name}`;
-    contentBlock.innerHTML = planetInfoHTML;
+    contentBlock.innerHTML = createInfoHTML(planet, "planet");
   } catch (error) {
-    messageHeader.innerHTML = `Error: ${error.name}`;
-    contentBlock.innerHTML = `<p>${error.message}</p>`;
+    handleError(error);
   } finally {
     hideSpinner();
   }
@@ -447,62 +360,17 @@ async function searchRacesById(id) {
       return;
     }
 
-    const filmsTitles =
-      Array.isArray(species.films) && species.films.length > 0
-        ? await getFilms(species.films)
-        : "Unknown";
-    species.films = filmsTitles;
+    species.films = await getFilms(species.films);
 
-    const charactersNames =
-      Array.isArray(species.people) && species.people.length > 0
-        ? await getCharacters(species.people)
-        : "Unknown";
-    species.people = charactersNames;
+    species.people = await getCharacters(species.people);
 
-    const planetName = await getPlanet(species.homeworld);
-    species.homeworld = planetName;
-
-    const speciesInfoHTML = `
-      <p>Name: ${species.name}</p>
-      <p>classification: ${species.classification} </p>
-      <p>designation: ${species.designation}</p>
-      <p>average_height: ${species.average_height}</p>
-      <p>skin_colors: ${species.skin_colors}</p>
-      <p>hair_colors: ${species.hair_colors}</p>
-      <p>eye_colors: ${species.eye_colors}</p>
-      <p>average_lifespan: ${species.average_lifespan}</p>
-      <p>homeworld: ${species.homeworld}</p>
-      <p>language: ${species.language}</p>
-      <p>people: </p>
-        <ul>
-          ${
-            Array.isArray(charactersNames)
-              ? charactersNames
-                  .map((character) => `<li>${character}</li>`)
-                  .join("")
-              : "Unknown"
-          }
-        </ul>
-      <p>films: </p>
-        <ul>
-          ${
-            Array.isArray(filmsTitles)
-              ? filmsTitles.map((film) => `<li>${film}</li>`).join("")
-              : "Unknown"
-          }
-        </ul>
-      <p>created: ${new Date(species.created).toLocaleString()}</p>
-      <p>edited: ${new Date(species.edited).toLocaleString()}</p>
-      `;
+    species.homeworld = await getPlanet(species.homeworld);
 
     resultContainer.style.visibility = "visible";
     messageHeader.innerHTML = `${species.name}`;
-    contentBlock.innerHTML = speciesInfoHTML;
+    contentBlock.innerHTML = createInfoHTML(species, "species");
   } catch (error) {
-    resultContainer.style.visibility = "visible";
-    messageHeader.innerHTML = `Error: ${error.name}`;
-    contentBlock.innerHTML = `${error.message}`;
-    console.log(error);
+    handleError(error);
   } finally {
     hideSpinner();
   }

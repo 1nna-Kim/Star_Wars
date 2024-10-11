@@ -15,6 +15,8 @@ body {
   max-height: 100vh;
   overflow-y: hidden;
   background-image: url(../images/at-st.jpg);
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 
 ul > li {
