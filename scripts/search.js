@@ -188,125 +188,62 @@ function createInfoHTML(data, type) {
   return html;
 }
 
-async function searchCharacter(query) {
+async function searchData(query, type, id = false) {
   try {
     showSpinner();
     resultContainer.style.visibility = "hidden";
     messageHeader.innerHTML = "";
     contentBlock.innerHTML = "";
 
-    const data = await starWars.searchCharacters(query);
-
-    if (validateArray(data.results)) {
-      const character = data.results[0];
-
-      character.homeworld = await getPlanet(character.homeworld);
-
-      character.species = await getSpecies(character.species);
-
-      character.films = await getFilms(character.films);
-
-      resultContainer.style.visibility = "visible";
-      messageHeader.innerHTML = `${character.name}`;
-      contentBlock.innerHTML = createInfoHTML(character, "character");
+    let data;
+    if (id) {
+      if (type === "character") data = await starWars.getCharactersById(query);
+      if (type === "planet") data = await starWars.getPlanetsById(query);
+      if (type === "species") data = await starWars.getSpeciesById(query);
     } else {
-      resultContainer.style.visibility = "visible";
-      contentBlock.innerHTML = `<p>Character not found</p>`;
+      if (type === "character") data = await starWars.searchCharacters(query);
+      if (type === "planet") data = await starWars.searchPlanets(query);
+      if (type === "species") data = await starWars.searchSpecies(query);
     }
-  } catch (error) {
-    handleError(error);
-  } finally {
-    hideSpinner();
-  }
-}
 
-async function searchPlanet(query) {
-  try {
-    showSpinner();
-    resultContainer.style.visibility = "hidden";
-    messageHeader.innerHTML = "";
-    contentBlock.innerHTML = "";
-
-    const data = await starWars.searchPlanets(query);
-
-    if (validateArray(data.results)) {
-      const planet = data.results[0];
-
-      planet.residents = await getCharacters(planet.residents);
-
-      planet.films = await getFilms(planet.films);
-
+    if (id) {
+      if (!data || data.detail === "Not found") {
+        resultContainer.style.visibility = "visible";
+        contentBlock.innerHTML = `<p>${
+          type.charAt(0).toUpperCase() + type.slice(1)
+        } not found</p>`;
+        return;
+      }
+    } else if (!validateArray(data.results)) {
       resultContainer.style.visibility = "visible";
-      messageHeader.innerHTML = `${planet.name}`;
-      contentBlock.innerHTML = createInfoHTML(planet, "planet");
-    } else {
-      resultContainer.style.visibility = "visible";
-      contentBlock.innerHTML = `<p>Planet not found</p>`;
-    }
-  } catch (error) {
-    handleError(error);
-  } finally {
-    hideSpinner();
-  }
-}
-
-async function searchRaces(query) {
-  try {
-    showSpinner();
-    resultContainer.style.visibility = "hidden";
-    messageHeader.innerHTML = "";
-    contentBlock.innerHTML = "";
-
-    const data = await starWars.searchSpecies(query);
-
-    if (validateArray(data.results)) {
-      const species = data.results[0];
-
-      species.films = await getFilms(species.films);
-
-      species.people = await getCharacters(species.people);
-
-      species.homeworld = await getPlanet(species.homeworld);
-
-      resultContainer.style.visibility = "visible";
-      messageHeader.innerHTML = `${species.name}`;
-      contentBlock.innerHTML = createInfoHTML(species, "species");
-    } else {
-      resultContainer.style.visibility = "visible";
-      contentBlock.innerHTML = `<p>Species not found</p>`;
-    }
-  } catch (error) {
-    handleError(error);
-  } finally {
-    hideSpinner();
-  }
-}
-
-async function searchCharacterById(id) {
-  try {
-    showSpinner();
-    resultContainer.style.visibility = "hidden";
-    messageHeader.innerHTML = "";
-    contentBlock.innerHTML = "";
-
-    const character = await starWars.getCharactersById(id);
-
-    if (!character || character.detail === "Not found") {
-      // Проверка на случай, если API возвращает объект с деталью "Not found"
-      resultContainer.style.visibility = "visible";
-      contentBlock.innerHTML = `<p>Character not found</p>`;
+      contentBlock.innerHTML = `<p>${
+        type.charAt(0).toUpperCase() + type.slice(1)
+      } not found</p>`;
       return;
     }
 
-    character.homeworld = await getPlanet(character.homeworld);
+    const item = id ? data : data.results[0];
 
-    character.species = await getSpecies(character.species);
+    if (type === "character") {
+      item.homeworld = await getPlanet(item.homeworld);
+      item.species = await getSpecies(item.species);
+      item.films = await getFilms(item.films);
+    }
 
-    character.films = await getFilms(character.films);
+    if (type === "planet") {
+      item.residents = await getCharacters(item.residents);
+      item.films = await getFilms(item.films);
+    }
+
+    if (type === "species") {
+      item.films = await getFilms(item.films);
+      item.people = await getCharacters(item.people);
+      item.homeworld = await getPlanet(item.homeworld);
+    }
 
     resultContainer.style.visibility = "visible";
-    messageHeader.innerHTML = `${character.name}`;
-    contentBlock.innerHTML = createInfoHTML(character, "character");
+    messageHeader.innerHTML = `${item.name}`;
+    contentBlock.innerHTML = createInfoHTML(item, type);
   } catch (error) {
     handleError(error);
   } finally {
@@ -314,102 +251,26 @@ async function searchCharacterById(id) {
   }
 }
 
-async function searchPlanetById(id) {
-  try {
-    showSpinner();
-    resultContainer.style.visibility = "hidden";
-    messageHeader.innerHTML = "";
-    contentBlock.innerHTML = "";
-
-    const planet = await starWars.getPlanetsById(id);
-
-    if (!planet || planet.detail === "Not found") {
-      // Проверка на случай, если API возвращает объект с деталью "Not found"
-      resultContainer.style.visibility = "visible";
-      contentBlock.innerHTML = `<p>Planet not found</p>`;
-      return;
-    }
-
-    planet.residents = await getCharacters(planet.residents);
-
-    planet.films = await getFilms(planet.films);
-
+function handleSearchButton(query, type, isIdSearch = false) {
+  if (query) {
+    searchData(query, type, isIdSearch);
+  } else {
     resultContainer.style.visibility = "visible";
-    messageHeader.innerHTML = `${planet.name}`;
-    contentBlock.innerHTML = createInfoHTML(planet, "planet");
-  } catch (error) {
-    handleError(error);
-  } finally {
-    hideSpinner();
-  }
-}
-
-async function searchRacesById(id) {
-  try {
-    showSpinner();
-    resultContainer.style.visibility = "hidden";
-    messageHeader.innerHTML = "";
-    contentBlock.innerHTML = "";
-
-    const species = await starWars.getSpeciesById(id);
-
-    if (!species || species.detail === "Not found") {
-      // Проверка на случай, если API возвращает объект с деталью "Not found"
-      resultContainer.style.visibility = "visible";
-      contentBlock.innerHTML = `<p>Species not found</p>`;
-      return;
-    }
-
-    species.films = await getFilms(species.films);
-
-    species.people = await getCharacters(species.people);
-
-    species.homeworld = await getPlanet(species.homeworld);
-
-    resultContainer.style.visibility = "visible";
-    messageHeader.innerHTML = `${species.name}`;
-    contentBlock.innerHTML = createInfoHTML(species, "species");
-  } catch (error) {
-    handleError(error);
-  } finally {
-    hideSpinner();
+    messageHeader.innerHTML = "Empty query";
+    contentBlock.innerHTML = `<p>Please enter a search term</p>`;
   }
 }
 
 searchButton.addEventListener("click", () => {
   const searchTypeValue = searchType.value;
   const query = searchInput.value.trim();
-  if (query) {
-    if (searchTypeValue === "character") {
-      searchCharacter(query);
-    } else if (searchTypeValue === "planet") {
-      searchPlanet(query);
-    } else if (searchTypeValue === "species") {
-      searchRaces(query);
-    }
-  } else {
-    resultContainer.style.visibility = "visible";
-    messageHeader.innerHTML = "Empty query";
-    contentBlock.innerHTML = `<p>Please enter a search term</p>`;
-  }
+  handleSearchButton(query, searchTypeValue);
 });
 
 searchButtonById.addEventListener("click", () => {
   const searchTypeValueId = searchTypeId.value;
   const id = searchInputId.value.trim();
-  if (id) {
-    if (searchTypeValueId === "character") {
-      searchCharacterById(id);
-    } else if (searchTypeValueId === "planet") {
-      searchPlanetById(id);
-    } else if (searchTypeValueId === "species") {
-      searchRacesById(id);
-    }
-  } else {
-    resultContainer.style.visibility = "visible";
-    messageHeader.innerHTML = "Empty query";
-    contentBlock.innerHTML = `<p>Please enter a search term</p>`;
-  }
+  handleSearchButton(id, searchTypeValueId, true);
 });
 
 deleteButton.addEventListener("click", () => {
